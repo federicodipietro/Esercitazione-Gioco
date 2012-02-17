@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="hello">Hello World, StartActivity!</string>
+    <string name="app_name">IndovinaIlNumero</string>
+	<string name="nome_utente">Nome Utente Proprio</string>
+	<string name="nome_avversario">Nome Utente Avversario</string>
+	<string name="btnPlay">Gioca</string>
+	
+</resources>
