@@ -1,11 +1,8 @@
 package indovinailnumero.namespace;
 
-import indovinailnumero.namespace.Main.Stato;
 
 import java.util.Timer;
 import java.util.TimerTask;
-
-import android.R.string;
 import android.app.Activity;
 import android.os.Bundle;
 import android.os.Handler;
@@ -29,6 +26,7 @@ public class Main extends Activity implements MessageReceiver{
 	Stato statoCorrente;
 	Handler handler;
 	Button b;
+	Timer timer;
 	
 	private String selectedNumber;
 	
@@ -64,14 +62,14 @@ public class Main extends Activity implements MessageReceiver{
 		TextView txMain = (TextView)findViewById(R.id.TxViewMain);
 		txMain.setText(nomeMio+" Vs "+nomeAvversario);
 		connection = new ConnectionManager(nomeMio, nomeAvversario, this);
-		Timer timer = new Timer();
+		timer = new Timer();
 		TimerTask sendStart = new TimerTask() {
 			
 			@Override
 			public void run() {
 				
 				if (statoCorrente==Stato.WAIT_FOR_START_ACK){
-					connection.send("Start");
+					connection.send("START");
 				}else{
 					Log.d("ATTENZIONE","Sending START but the state is "+ statoCorrente);
 				}
@@ -80,7 +78,7 @@ public class Main extends Activity implements MessageReceiver{
 		//decido chi comincia
 				if (nomeAvversario.hashCode()<nomeMio.hashCode()){
 					//inizio per primo
-					timer.schedule(sendStart, 1000,5000);
+					timer.schedule(sendStart, 1000L,5000L);
 					statoCorrente=Stato.WAIT_FOR_START_ACK;
 				}else{
 					//inizia avversario e io aspetto il pacchetto
@@ -122,13 +120,18 @@ public class Main extends Activity implements MessageReceiver{
 		//ricevo start_ack e aspetto che avversario gioca
 		else if(msg.equals("STARTACK")){
 			if(statoCorrente==Stato.WAIT_FOR_START_ACK){
+				
+				timer.cancel();
+				
+				Log.w("ATTENZIONE", "Timer cancel");
+				
 				statoCorrente=Stato.WAIT_FOR_NUMBER_SELECTION;
 			}else{
 				Log.e("ATTENZIONE","Ricevuto STARTACK ma lo stato e' "+statoCorrente);
 			}
 		}else if(msg.startsWith("SELECTED")){
 			if (statoCorrente==Stato.WAIT_FOR_NUMBER_SELECTION){
-				selectedNumber=msg.split(" : ")[1];
+				selectedNumber=msg.split(":")[1];
 				Message osmsg = handler.obtainMessage(Main.SHOW_TOAST);
 				Bundle b = new Bundle();
 				b.putString("toast", "indovina il numero");
@@ -140,7 +143,7 @@ public class Main extends Activity implements MessageReceiver{
 			}
 		}else if(statoCorrente==Stato.USER_BETTING){
 			String bet = b.getText().toString();
-			connection.send("BET: "+bet);
+			connection.send("BET:"+bet);
 			if (bet.equals(selectedNumber)){
 				Toast.makeText(Main.this, "Bravo hai indovinato, ora tocca a te", Toast.LENGTH_LONG).show();
 			}else{
@@ -149,7 +152,7 @@ public class Main extends Activity implements MessageReceiver{
 			statoCorrente=Stato.USER_SELECTING;
 		}else if(msg.startsWith("BET")){
 			if (statoCorrente==Stato.WAIT_FOR_BET){
-				String result = msg.split(" : ")[1];
+				String result = msg.split(":")[1];
 				Message osmsg = handler.obtainMessage(Main.SHOW_TOAST);
 				Bundle b = new Bundle();
 				if (result.equals("Y"))
@@ -170,8 +173,18 @@ public class Main extends Activity implements MessageReceiver{
 		Button b= (Button) v;
 		//b.getText().toString();
 		if (statoCorrente==Stato.USER_SELECTING){
-			connection.send("SELECTED: "+b.getText().toString());
+			connection.send("SELECTED:"+b.getText().toString());
 			statoCorrente=Stato.WAIT_FOR_BET;
+		}
+		else if(statoCorrente==Stato.USER_BETTING){
+			if (b.getText().toString().equals(selectedNumber)){
+				connection.send("BET:Y");
+				Toast.makeText(Main.this,"Bravo hai indovinato ora tocca a te", Toast.LENGTH_LONG).show();
+			}else{
+				connection.send("BET:N");
+				Toast.makeText(Main.this,"Peccato non hai indovinato ora tocca a te", Toast.LENGTH_LONG).show();
+			}
+			statoCorrente=Stato.USER_SELECTING;
 		}
 	}
 }

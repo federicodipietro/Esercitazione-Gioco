@@ -39,7 +39,7 @@ public class ConnectionManager implements PacketListener {
 			connection.addPacketListener(this, new MessageTypeFilter(
 					Message.Type.normal));
 			connected = true;
-			Log.d(TAG, "XMPP Connection Started");
+			Log.e(TAG, "XMPP Connection Started");
 		} catch (XMPPException e) {
 			e.printStackTrace();
 		}
